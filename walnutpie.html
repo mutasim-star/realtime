@@ -6,75 +6,92 @@
     <title>WalnutPie - Nourish Your Mind</title> 
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Firebase SDK (Das Gehirn der App) -->
     <script type="module">
+      // Importiere die echten Funktionen aus der Google Cloud
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
       import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
       import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
       // ==================================================================
-      // 🛑 STOPP! HIER DEINEN SCHLÜSSEL VOM SCREENSHOT EINFÜGEN
+      // 🛑 WICHTIG: HIER DEINEN SCHLÜSSEL EINFÜGEN
       // ==================================================================
       const firebaseConfig = {
-          apiKey: "AIzaSyAPsSVNNJI-LeZpBN8VRlvwMLx-SuIDoH8",
-    authDomain: "wallnuttpie.firebaseapp.com",
-    projectId: "wallnuttpie",
-    storageBucket: "wallnuttpie.firebasestorage.app",
-    messagingSenderId: "997637330222",
-    appId: "1:997637330222:web:f12febae01aadd631716bf",
-    measurementId: "G-4YVQTFPBPX"
+           apiKey: "AIzaSyAPsSVNNJI-LeZpBN8VRlvwMLx-SuIDoH8",
+  authDomain: "wallnuttpie.firebaseapp.com",
+  projectId: "wallnuttpie",
+  storageBucket: "wallnuttpie.firebasestorage.app",
+  messagingSenderId: "997637330222",
+  appId: "1:997637330222:web:5de39dd7e7bc92041716bf",
+  measurementId: "G-3E85C7J21R"
       };
       // ==================================================================
 
+      // Initialisierung (Startet die Verbindung zu Google)
       let app, auth, db;
       try {
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        console.log("Firebase bereit.");
+        console.log("Verbindung zur Cloud hergestellt.");
       } catch (e) {
-        console.warn("Firebase Config fehlt noch.");
+        console.warn("Warte auf Firebase Config... (Hast du den Key eingefügt?)");
       }
 
-      // Auth Listener
+      // Der "Türsteher": Prüft, ob jemand eingeloggt ist
       if(auth) {
           onAuthStateChanged(auth, (user) => {
             if (user) {
+              // User ist drin -> Zeige das Dashboard
               document.getElementById('landing-page').classList.add('hidden');
               document.getElementById('dashboard-page').classList.remove('hidden');
               document.getElementById('user-email-display').innerText = user.email;
             } else {
+              // User ist draußen -> Zeige die Startseite
               document.getElementById('landing-page').classList.remove('hidden');
               document.getElementById('dashboard-page').classList.add('hidden');
             }
           });
       }
 
-      // Registrierung (Echt)
+      // ECHTE REGISTRIERUNG (Speichert Daten in der Cloud)
       window.registerUser = async function() {
           const email = document.getElementById('email').value;
           const password = document.getElementById('password').value;
           const btn = document.getElementById('register-btn-text');
           
+          // 1. Sicherheits-Check (Frontend)
           if (!email.includes('.') || (!email.includes('uni') && !email.includes('edu') && !email.includes('fh') && !email.includes('hochschule'))) {
-              alert("⚠️ Sicherheits-Check: Bitte nutze eine gültige Hochschul-Mail.");
+              alert("⚠️ Zugriff verweigert: Dies ist keine erkennbare Hochschul-Mail.");
               return;
           }
 
           try {
-              if(!auth) throw new Error("Firebase Key fehlt!");
-              btn.innerText = "Backen...";
+              if(!auth) throw new Error("Firebase Key fehlt im Code! Bitte Zeile 18 bearbeiten.");
+              
+              btn.innerText = "Verbinde mit Cloud...";
+              
+              // 2. User in Firebase Auth erstellen
               const userCredential = await createUserWithEmailAndPassword(auth, email, password);
               const user = userCredential.user;
               
+              // 3. User-Profil in Firestore Datenbank speichern
               await setDoc(doc(db, "users", user.uid), {
                   email: email,
-                  university: email.split('@')[1],
-                  createdAt: new Date()
+                  university: email.split('@')[1], // Extrahiert die Uni aus der Mail
+                  createdAt: new Date(),
+                  status: "new"
               });
-              alert("Erfolg! Willkommen bei WalnutPie.");
+              
+              alert("Erfolg! Dein Account wurde in der Cloud erstellt.");
           } catch (error) {
-              alert("Info: " + error.message);
-              // Fallback für Demo
+              console.error(error);
+              let msg = error.message;
+              if(error.code === 'auth/email-already-in-use') msg = "Diese E-Mail ist schon registriert.";
+              if(error.code === 'auth/weak-password') msg = "Passwort ist zu schwach (min. 6 Zeichen).";
+              alert("Fehler: " + msg);
+              
+              // Demo-Modus falls kein Key da ist (damit du was siehst)
               if(!auth) {
                   document.getElementById('landing-page').classList.add('hidden');
                   document.getElementById('dashboard-page').classList.remove('hidden');
@@ -83,11 +100,18 @@
           }
       }
 
-      // Suche (Simulation)
+      // LOGOUT
+      window.logout = function() {
+          if(auth) signOut(auth); else window.location.reload();
+      }
+
+      // --- UI FUNKTIONEN (Suche Simulation) ---
       window.searchPartners = function() {
           const searchTag = document.getElementById('dashboard-search').value;
           const resultsDiv = document.getElementById('results-area');
-          resultsDiv.innerHTML = '<p class="text-walnut-gold font-bold animate-pulse">Suche in der Küche...</p>';
+          resultsDiv.innerHTML = '<p class="text-walnut-gold font-bold animate-pulse">Suche in der Datenbank...</p>';
+          
+          // Hier würde später die echte Datenbank-Abfrage stehen
           setTimeout(() => {
               resultsDiv.innerHTML = `
                 <div class="p-4 border-l-4 border-walnut-gold bg-white shadow-sm rounded-r-lg mb-3 flex justify-between items-center">
@@ -99,10 +123,6 @@
                 </div>
               `;
           }, 800);
-      }
-
-      window.logout = function() {
-          if(auth) signOut(auth); else window.location.reload();
       }
     </script>
 
@@ -145,7 +165,7 @@
         .lang-btn-active { opacity: 1; color: #b45309; text-decoration: underline; font-weight: 900; }
         .dark .lang-btn-active { color: #fbbf24; }
         
-        /* Tag Styling (Repariert!) */
+        /* Tag Styling */
         .tag { 
             background-color: #fffbeb; 
             color: #b45309; 
@@ -176,6 +196,7 @@
         <span class="doodle d4">DNA 🧬</span> <span class="doodle d5">#Lernen</span> <span class="doodle d6">sin(α)</span>
     </div>
 
+    <!-- Landing Page -->
     <div id="landing-page">
         <header class="fixed w-full top-0 z-50 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800">
             <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -186,6 +207,7 @@
                     <span class="text-2xl font-bold tracking-tight serif-font text-stone-900 dark:text-white">Walnut<span class="text-walnut-gold">Pie</span></span>
                 </div>
                 
+                <!-- Desktop Lang -->
                 <div class="hidden md:flex items-center space-x-2 border-l border-stone-300 pl-4 ml-4">
                     <button id="lang-de" class="lang-btn" onclick="setLanguage('de')">DE</button>
                     <button id="lang-en" class="lang-btn" onclick="setLanguage('en')">EN</button>
@@ -197,6 +219,7 @@
                     <button onclick="document.documentElement.classList.toggle('dark')" class="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800">🌗</button>
                     <a href="#about" id="nav-about" class="font-bold text-sm hover:text-walnut-gold hidden sm:block">Über mich</a>
                     <a href="#login" id="nav-login" class="btn-primary text-sm py-2 px-5 shadow-none">Start</a>
+                    <!-- Hamburger -->
                     <button id="mobile-menu-btn" class="md:hidden p-2" onclick="toggleMobileMenu()">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
                     </button>
@@ -204,6 +227,7 @@
             </nav>
         </header>
 
+        <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden fixed inset-0 z-[60] bg-white dark:bg-stone-900 p-6 flex flex-col justify-center items-center transition-opacity duration-300">
             <button onclick="toggleMobileMenu()" class="absolute top-6 right-6 p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -214,6 +238,7 @@
                 <a href="#login" onclick="toggleMobileMenu()" class="hover:text-walnut-gold transition-colors">Login</a>
             </div>
             
+            <!-- Mobile Sprach-Buttons -->
             <div class="mt-16 flex justify-center gap-6">
                 <button id="mobile-lang-de" onclick="setLanguage('de')" class="text-xl font-bold transition-all text-stone-400 hover:text-stone-800 dark:hover:text-white">DE</button>
                 <button id="mobile-lang-en" onclick="setLanguage('en')" class="text-xl font-bold transition-all text-stone-400 hover:text-stone-800 dark:hover:text-white">EN</button>
@@ -268,6 +293,7 @@
             </div>
         </section>
         
+        <!-- Safety Section -->
         <section class="py-20">
             <div class="container mx-auto px-6 text-center">
                 <h3 id="safety-title" class="text-3xl font-bold mb-12 serif-font">Warum es sicher ist</h3>
@@ -280,6 +306,7 @@
         </section>
     </div>
 
+    <!-- Dashboard -->
     <div id="dashboard-page" class="hidden min-h-screen flex flex-col">
         <header class="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 sticky top-0 z-50">
             <div class="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -312,6 +339,7 @@
         </main>
     </div>
 
+    <!-- Scripts -->
     <script>
         // UI Functions
         window.toggleMobileMenu = function() {
