@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="de" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WalnutPie - Nourish Your Mind</title> 
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+      // ==================================================================
+      // 🛑 STOPP! HIER DEINEN SCHLÜSSEL VOM SCREENSHOT EINFÜGEN
+      // ==================================================================
+      const firebaseConfig = {
+          apiKey: "AIzaSyAPsSVNNJI-LeZpBN8VRlvwMLx-SuIDoH8",
+    authDomain: "wallnuttpie.firebaseapp.com",
+    projectId: "wallnuttpie",
+    storageBucket: "wallnuttpie.firebasestorage.app",
+    messagingSenderId: "997637330222",
+    appId: "1:997637330222:web:f12febae01aadd631716bf",
+    measurementId: "G-4YVQTFPBPX"
+      };
+      // ==================================================================
+
+      let app, auth, db;
+      try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        console.log("Firebase bereit.");
+      } catch (e) {
+        console.warn("Firebase Config fehlt noch.");
+      }
+
+      // Auth Listener
+      if(auth) {
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              document.getElementById('landing-page').classList.add('hidden');
+              document.getElementById('dashboard-page').classList.remove('hidden');
+              document.getElementById('user-email-display').innerText = user.email;
+            } else {
+              document.getElementById('landing-page').classList.remove('hidden');
+              document.getElementById('dashboard-page').classList.add('hidden');
+            }
+          });
+      }
+
+      // Registrierung (Echt)
+      window.registerUser = async function() {
+          const email = document.getElementById('email').value;
+          const password = document.getElementById('password').value;
+          const btn = document.getElementById('register-btn-text');
+          
+          if (!email.includes('.') || (!email.includes('uni') && !email.includes('edu') && !email.includes('fh') && !email.includes('hochschule'))) {
+              alert("⚠️ Sicherheits-Check: Bitte nutze eine gültige Hochschul-Mail.");
+              return;
+          }
+
+          try {
+              if(!auth) throw new Error("Firebase Key fehlt!");
+              btn.innerText = "Backen...";
+              const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+              const user = userCredential.user;
+              
+              await setDoc(doc(db, "users", user.uid), {
+                  email: email,
+                  university: email.split('@')[1],
+                  createdAt: new Date()
+              });
+              alert("Erfolg! Willkommen bei WalnutPie.");
+          } catch (error) {
+              alert("Info: " + error.message);
+              // Fallback für Demo
+              if(!auth) {
+                  document.getElementById('landing-page').classList.add('hidden');
+                  document.getElementById('dashboard-page').classList.remove('hidden');
+              }
+              btn.innerText = "Kostenlos beitreten";
+          }
+      }
+
+      // Suche (Simulation)
+      window.searchPartners = function() {
+          const searchTag = document.getElementById('dashboard-search').value;
+          const resultsDiv = document.getElementById('results-area');
+          resultsDiv.innerHTML = '<p class="text-walnut-gold font-bold animate-pulse">Suche in der Küche...</p>';
+          setTimeout(() => {
+              resultsDiv.innerHTML = `
+                <div class="p-4 border-l-4 border-walnut-gold bg-white shadow-sm rounded-r-lg mb-3 flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-gray-800">Student @ TU München</div>
+                        <div class="text-xs text-gray-500">Lernt auch: <span class="bg-orange-100 px-1 rounded text-orange-800 font-bold">${searchTag || '#Thema'}</span></div>
+                    </div>
+                    <button class="bg-walnut-dark text-white px-4 py-1 rounded-full text-sm font-bold hover:bg-walnut-light">Connect</button>
+                </div>
+              `;
+          }, 800);
+      }
+
+      window.logout = function() {
+          if(auth) signOut(auth); else window.location.reload();
+      }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@300;500;700&family=Patrick+Hand&display=swap');
+        body { font-family: 'Outfit', sans-serif; transition: background-color 0.3s ease; }
+        h1, h2, h3, h4, .serif-font { font-family: 'DM Serif Display', serif; }
+        
+        /* Notebook Grid */
+        .notebook-grid {
+            position: fixed; inset: 0; z-index: -1; background-color: #fafaf9;
+            background-image: radial-gradient(#d6d3d1 1px, transparent 1px); background-size: 30px 30px;
+        }
+        .dark .notebook-grid { background-color: #1c1917; background-image: radial-gradient(#44403c 1px, transparent 1px); }
+
+        /* Doodles */
+        .doodles { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+        .doodle { position: absolute; font-family: 'Patrick Hand', cursive; font-size: 1.8rem; color: rgba(180, 83, 9, 0.15); transform: rotate(-5deg); user-select: none; }
+        .dark .doodle { color: rgba(255, 255, 255, 0.08); } 
+        .d1 { top: 15%; left: 5%; transform: rotate(-15deg); font-size: 2rem; }
+        .d2 { top: 25%; left: 85%; font-size: 2.5rem; }
+        .d3 { top: 65%; left: 10%; }
+        .d4 { top: 55%; left: 80%; transform: rotate(10deg); }
+        .d5 { top: 85%; left: 40%; font-size: 1.5rem; }
+        .d6 { top: 15%; left: 45%; font-size: 1.2rem; }
+        .d7 { top: 40%; left: 15%; transform: rotate(5deg); }
+
+        /* Colors */
+        .highlight-mark { background: linear-gradient(120deg, #fbbf24 0%, #fbbf24 100%); background-repeat: no-repeat; background-size: 100% 30%; background-position: 0 85%; }
+        .btn-primary { background-color: #b45309; color: white; font-weight: 700; border-radius: 12px; transition: all 0.2s; box-shadow: 0 4px 0 #78350f; }
+        .btn-primary:active { transform: translateY(4px); box-shadow: 0 0 0 #78350f; }
+        .btn-secondary { background-color: #f59e0b; color: white; font-weight: 700; border-radius: 12px; transition: all 0.2s; box-shadow: 0 4px 0 #b45309; }
+        .input-field { border: 2px solid #e5e5e5; border-radius: 12px; padding: 12px 20px; font-size: 1rem; transition: all 0.2s; background: white; }
+        .dark .input-field { background: #292524; border-color: #44403c; color: white; }
+        .input-field:focus { outline: none; border-color: #b45309; box-shadow: 0 0 0 4px rgba(180, 83, 9, 0.1); }
+        
+        /* Lang Buttons */
+        .lang-btn { font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; transition: all 0.2s; opacity: 0.5; cursor: pointer; }
+        .lang-btn:hover { opacity: 1; background: rgba(180, 83, 9, 0.1); }
+        .lang-btn-active { opacity: 1; color: #b45309; text-decoration: underline; font-weight: 900; }
+        .dark .lang-btn-active { color: #fbbf24; }
+        
+        /* Tag Styling (Repariert!) */
+        .tag { 
+            background-color: #fffbeb; 
+            color: #b45309; 
+            border: 1px solid #fcd34d; 
+            padding: 4px 12px; 
+            border-radius: 9999px; 
+            font-size: 0.875rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+        }
+        .dark .tag { background-color: #451a03; color: #fbbf24; border-color: #92400e; }
+        
+        #mobile-menu { transition: opacity 0.3s ease-in-out; }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { 'walnut-dark': '#78350f', 'walnut-gold': '#b45309', 'walnut-light': '#d97706' } } }
+        }
+    </script>
+</head>
+<body class="text-stone-800 dark:text-stone-100 overflow-x-hidden">
+
+    <div class="notebook-grid"></div>
+    <div class="doodles">
+        <span class="doodle d1">∫(x) = x²</span> <span class="doodle d2">H₂O</span> <span class="doodle d3">E = mc²</span>
+        <span class="doodle d4">DNA 🧬</span> <span class="doodle d5">#Lernen</span> <span class="doodle d6">sin(α)</span>
+    </div>
+
+    <div id="landing-page">
+        <header class="fixed w-full top-0 z-50 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800">
+            <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center text-walnut-gold">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2 C7,2 4,5 4,9 C4,11.5 5.5,14 7,15 C7,17 7,19 12,19 C17,19 17,17 17,15 C18.5,14 20,11.5 20,9 C20,5 17,2 12,2 M8,9 C8,7 9,5 11,5 M16,9 C16,7 15,5 13,5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M18,18 L22,18 A4,4 0 0,0 22,14 L18,18" fill="currentColor"/></svg>
+                    </div>
+                    <span class="text-2xl font-bold tracking-tight serif-font text-stone-900 dark:text-white">Walnut<span class="text-walnut-gold">Pie</span></span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-2 border-l border-stone-300 pl-4 ml-4">
+                    <button id="lang-de" class="lang-btn" onclick="setLanguage('de')">DE</button>
+                    <button id="lang-en" class="lang-btn" onclick="setLanguage('en')">EN</button>
+                    <button id="lang-fr" class="lang-btn" onclick="setLanguage('fr')">FR</button>
+                    <button id="lang-es" class="lang-btn" onclick="setLanguage('es')">ES</button>
+                </div>
+
+                <div class="flex items-center gap-4 ml-auto">
+                    <button onclick="document.documentElement.classList.toggle('dark')" class="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800">🌗</button>
+                    <a href="#about" id="nav-about" class="font-bold text-sm hover:text-walnut-gold hidden sm:block">Über mich</a>
+                    <a href="#login" id="nav-login" class="btn-primary text-sm py-2 px-5 shadow-none">Start</a>
+                    <button id="mobile-menu-btn" class="md:hidden p-2" onclick="toggleMobileMenu()">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                    </button>
+                </div>
+            </nav>
+        </header>
+
+        <div id="mobile-menu" class="hidden fixed inset-0 z-[60] bg-white dark:bg-stone-900 p-6 flex flex-col justify-center items-center transition-opacity duration-300">
+            <button onclick="toggleMobileMenu()" class="absolute top-6 right-6 p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            
+            <div class="flex flex-col space-y-8 text-center text-3xl font-bold serif-font text-stone-800 dark:text-stone-100">
+                <a href="#about" onclick="toggleMobileMenu()" class="hover:text-walnut-gold transition-colors">Mission</a>
+                <a href="#login" onclick="toggleMobileMenu()" class="hover:text-walnut-gold transition-colors">Login</a>
+            </div>
+            
+            <div class="mt-16 flex justify-center gap-6">
+                <button id="mobile-lang-de" onclick="setLanguage('de')" class="text-xl font-bold transition-all text-stone-400 hover:text-stone-800 dark:hover:text-white">DE</button>
+                <button id="mobile-lang-en" onclick="setLanguage('en')" class="text-xl font-bold transition-all text-stone-400 hover:text-stone-800 dark:hover:text-white">EN</button>
+                <button id="mobile-lang-fr" onclick="setLanguage('fr')" class="text-xl font-bold transition-all text-stone-400 hover:text-stone-800 dark:hover:text-white">FR</button>
+                <button id="mobile-lang-es" onclick="setLanguage('es')" class="text-xl font-bold transition-all text-stone-400 hover:text-stone-800 dark:hover:text-white">ES</button>
+            </div>
+        </div>
+
+        <main class="relative pt-40 pb-20 px-4 text-center">
+            <div class="inline-block mb-6 transform -rotate-2">
+                <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded shadow-sm border border-amber-200">BETA v2.9</span>
+            </div>
+            <h1 id="main-headline" class="serif-font text-5xl md:text-7xl font-normal mb-6 leading-tight">
+                Nourish Your <br><span class="highlight-mark italic">Mind.</span> Together.
+            </h1>
+            <p id="sub-headline" class="text-lg text-stone-600 dark:text-stone-400 mb-10 max-w-xl mx-auto font-medium">
+                Keine Randoms. Nur verifizierte Studenten von deiner Uni oder Stadt. <span class="text-walnut-gold font-bold">#KeinerLerntAllein</span>
+            </p>
+
+            <div id="login" class="max-w-md mx-auto bg-white dark:bg-stone-800 p-8 rounded-3xl shadow-xl border-2 border-stone-100 dark:border-stone-700 relative">
+                <div class="absolute -top-3 -right-3 bg-walnut-gold w-10 h-10 rounded-full flex items-center justify-center text-white font-bold transform rotate-12 shadow-lg">🍰</div>
+                <h2 id="register-headline" class="text-2xl font-bold mb-6 text-left serif-font">Zugang zum Circle</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label id="label-email" class="block text-xs font-bold text-stone-500 uppercase mb-1 ml-1">Uni-Email</label>
+                        <input type="email" id="email" class="input-field w-full" placeholder="name@uni-beispiel.de">
+                    </div>
+                    <div>
+                        <label id="label-pass" class="block text-xs font-bold text-stone-500 uppercase mb-1 ml-1">Passwort</label>
+                        <input type="password" id="password" class="input-field w-full" placeholder="••••••••">
+                    </div>
+                    <button onclick="window.registerUser()" class="btn-primary w-full py-3.5 text-lg mt-2">
+                        <span id="register-btn-text">Stück vom Kuchen holen</span>
+                    </button>
+                </div>
+                <p id="safety-note" class="mt-6 text-xs text-stone-400 text-center">🔒 Sicher durch Hochschul-Verifizierung.</p>
+            </div>
+            <div class="mt-16 flex flex-wrap justify-center gap-3 max-w-2xl mx-auto opacity-80">
+                <span class="tag">#Jura</span> <span class="tag">#Medizin</span> <span class="tag">#BWL</span> <span class="tag">#Informatik</span> <span class="tag">#Psychologie</span>
+            </div>
+        </main>
+
+        <section id="about" class="py-20 bg-white dark:bg-stone-800 border-t border-stone-100 dark:border-stone-700">
+            <div class="container mx-auto px-6 max-w-3xl">
+                <h3 id="about-title" class="text-3xl font-bold text-center mb-8 serif-font">Wer steckt dahinter?</h3>
+                <div class="bg-amber-50 dark:bg-stone-900 p-8 rounded-2xl border-l-4 border-walnut-gold">
+                    <p id="about-text" class="text-lg leading-relaxed text-stone-700 dark:text-stone-300 mb-4">
+                        Hi! Hinter WalnutPie steckt kein gesichtsloser Großkonzern und kein riesiges Entwickler-Team im Silicon Valley. Ich bin einfach ein Student – genau wie du.<br><br>Ich kenne das Gefühl nur zu gut: Du sitzt bis spät in die Nacht in der Bibliothek, starrst auf eine Aufgabe und kommst einfach nicht weiter. Die Foren sind inaktiv, deine Freunde lernen etwas anderes, und jemanden anzusprechen kostet Überwindung.<br><br>Genau aus diesem Frust habe ich WalnutPie gebaut. Ich wollte einen Ort schaffen, an dem man sofort jemanden findet, der im selben Boot sitzt. Wir teilen Wissen so einfach wie ein Stück Kuchen. Keine Fakes, keine Ablenkung, nur wir Studenten.
+                    </p>
+                    <p class="font-bold text-walnut-gold text-right">- Der Entwickler</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="py-20">
+            <div class="container mx-auto px-6 text-center">
+                <h3 id="safety-title" class="text-3xl font-bold mb-12 serif-font">Warum es sicher ist</h3>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="p-6 bg-white dark:bg-stone-800 rounded-xl shadow-sm"><div class="text-4xl mb-4">🎓</div><h4 id="safe-1-head" class="font-bold text-xl mb-2">Uni-Mail Check</h4><p id="safe-1-text" class="text-sm text-stone-500">Nur echte .edu/.uni Mails.</p></div>
+                    <div class="p-6 bg-white dark:bg-stone-800 rounded-xl shadow-sm"><div class="text-4xl mb-4">🛡️</div><h4 id="safe-2-head" class="font-bold text-xl mb-2">Verifiziert</h4><p id="safe-2-text" class="text-sm text-stone-500">Echte Studenten, keine Bots.</p></div>
+                    <div class="p-6 bg-white dark:bg-stone-800 rounded-xl shadow-sm"><div class="text-4xl mb-4">🍰</div><h4 id="safe-3-head" class="font-bold text-xl mb-2">Good Vibes</h4><p id="safe-3-text" class="text-sm text-stone-500">Kein Dating, nur Lernen.</p></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="dashboard-page" class="hidden min-h-screen flex flex-col">
+        <header class="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 sticky top-0 z-50">
+            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <span class="font-bold text-xl flex items-center gap-2 serif-font"><span class="w-6 h-6 bg-walnut-gold rounded flex items-center justify-center text-white text-xs">W</span> WalnutPie</span>
+                <div class="flex items-center gap-4">
+                    <span id="user-email-display" class="text-xs font-mono bg-stone-100 dark:bg-stone-800 px-2 py-1 rounded text-stone-500 hidden md:inline-block"></span>
+                    <button onclick="window.logout()" class="text-sm font-bold text-stone-500 hover:text-red-500">Logout</button>
+                </div>
+            </div>
+        </header>
+        <main class="container mx-auto px-4 py-8 flex-grow">
+            <div class="grid md:grid-cols-12 gap-8">
+                <div class="md:col-span-4 lg:col-span-3">
+                    <div class="bg-white dark:bg-stone-800 p-6 rounded-2xl shadow-sm border border-stone-200 dark:border-stone-700 sticky top-24">
+                        <h2 class="text-center text-xl font-bold">Profil</h2>
+                        <p class="text-center text-sm text-stone-500">Student</p>
+                    </div>
+                </div>
+                <div class="md:col-span-8 lg:col-span-9">
+                    <div class="bg-gradient-to-r from-walnut-gold to-amber-600 p-8 rounded-3xl text-white shadow-lg mb-10">
+                        <h2 class="text-3xl font-bold mb-2 serif-font">Finde Partner</h2>
+                        <div class="flex gap-2">
+                            <input type="text" id="dashboard-search" class="w-full rounded-xl px-5 py-3 text-gray-900 focus:outline-none" placeholder="#Thema...">
+                            <button onclick="window.searchPartners()" class="btn-secondary px-8 py-3 shadow-lg">Suchen</button>
+                        </div>
+                    </div>
+                    <div id="results-area" class="space-y-4"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // UI Functions
+        window.toggleMobileMenu = function() {
+            const menu = document.getElementById('mobile-menu');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // No scroll
+            } else {
+                menu.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // Translations
+        const translations = {
+            'de': { 
+                'main-headline': 'Nähre deinen <br><span class="highlight-mark italic">Geist.</span> Zusammen.', 
+                'sub-headline': 'Keine Randoms. Nur verifizierte Studenten von deiner Uni oder Stadt.', 
+                'register-headline': 'Zugang zum Circle', 
+                'label-email': 'Uni-Email', 
+                'label-pass': 'Passwort', 
+                'register-btn-text': 'Stück vom Kuchen holen', 
+                'nav-about': 'Über mich', 
+                'about-title': 'Wer steckt dahinter?', 
+                'about-text': 'Hi! Hinter WalnutPie steckt kein gesichtsloser Großkonzern und kein riesiges Entwickler-Team im Silicon Valley. Ich bin einfach ein Student – genau wie du.<br><br>Ich kenne das Gefühl nur zu gut: Du sitzt bis spät in die Nacht in der Bibliothek, starrst auf eine Aufgabe und kommst einfach nicht weiter. Die Foren sind inaktiv, deine Freunde lernen etwas anderes, und jemanden anzusprechen kostet Überwindung.<br><br>Genau aus diesem Frust habe ich WalnutPie gebaut. Ich wollte einen Ort schaffen, an dem man sofort jemanden findet, der im selben Boot sitzt. Wir teilen Wissen so einfach wie ein Stück Kuchen. Keine Fakes, keine Ablenkung, nur wir Studenten.',
+                'safety-title': 'Warum es sicher ist', 
+                'safe-1-head': 'Uni-Mail Check', 
+                'safe-1-text': 'Nur echte .edu Mails.', 
+                'safe-2-head': 'Verifiziert', 
+                'safe-2-text': 'Echte Studenten.', 
+                'safe-3-head': 'Good Vibes', 
+                'safe-3-text': 'Kein Spam.' 
+            },
+            'en': { 
+                'main-headline': 'Nourish Your <br><span class="highlight-mark italic">Mind.</span> Together.', 
+                'sub-headline': 'No randoms. Verified students only.', 
+                'register-headline': 'Join the Circle', 
+                'label-email': 'Uni Email', 
+                'label-pass': 'Password', 
+                'register-btn-text': 'Get a Slice', 
+                'nav-about': 'About', 
+                'about-title': 'Who is behind this?', 
+                'about-text': 'Hi there! WalnutPie isn\'t backed by some faceless tech giant or a massive dev team in Silicon Valley. It\'s just me – a student, exactly like you.<br><br>I know the feeling all too well: sitting in the library late at night, staring at an assignment, completely stuck. Online forums are dead, friends are studying different subjects, and approaching strangers feels awkward.<br><br>That frustration is exactly why I built WalnutPie. I wanted to create a space where you can instantly find someone in the same boat. We share knowledge as easily as sharing a slice of pie. No fakes, no distractions, just us students.',
+                'safety-title': 'Why safe?', 
+                'safe-1-head': 'Uni-Mail Check', 
+                'safe-1-text': 'Real .edu emails only.', 
+                'safe-2-head': 'Verified', 
+                'safe-2-text': 'Real students.', 
+                'safe-3-head': 'Good Vibes', 
+                'safe-3-text': 'No spam.' 
+            },
+            'fr': { 
+                'main-headline': 'Nourrissez votre <br><span class="highlight-mark italic">Esprit.</span>', 
+                'sub-headline': 'Pas d\'inconnus. Seulement des étudiants vérifiés.', 
+                'register-headline': 'Rejoignez le Cercle', 
+                'register-btn-text': 'Rejoindre', 
+                'nav-about': 'À propos',
+                'about-title': 'Qui suis-je ?',
+                'about-text': 'Salut ! WalnutPie n\'est pas une multinationale sans visage ni une énorme équipe de la Silicon Valley. C\'est juste moi – un étudiant, tout comme toi.<br><br>Je ne connais que trop bien ce sentiment : rester tard à la bibliothèque, bloqué sur un devoir sans pouvoir avancer. Les forums sont inactifs, les amis étudient autre chose, et oser demander de l\'aide à un inconnu est difficile.<br><br>C\'est précisément de cette frustration qu\'est né WalnutPie. Je voulais créer un endroit où l\'on peut trouver instantanément quelqu\'un dans la même galère. Nous partageons le savoir aussi simplement qu\'une part de gâteau. Pas de faux profils, pas de distractions, juste nous, les étudiants.',
+                'safety-title': 'Pourquoi c\'est sûr', 
+                'safe-1-head': 'E-mail Uni', 
+                'safe-1-text': 'Vérifié.', 
+                'safe-2-head': 'Vérifié', 
+                'safe-2-text': 'Vrais étudiants.', 
+                'safe-3-head': 'Ambiance', 
+                'safe-3-text': 'Pas de spam.' 
+            },
+            'es': { 
+                'main-headline': 'Nutre tu <br><span class="highlight-mark italic">Mente.</span>', 
+                'sub-headline': 'Sin desconocidos. Solo estudiantes verificados.', 
+                'register-headline': 'Únete al Círculo', 
+                'register-btn-text': 'Únete', 
+                'nav-about': 'Sobre mí',
+                'about-title': '¿Quién soy?',
+                'about-text': '¡Hola! Detrás de WalnutPie no hay una gran corporación sin rostro ni un equipo masivo de Silicon Valley. Soy solo yo, un estudiante, exactamente igual que tú.<br><br>Conozco demasiado bien esa sensación: estar sentado en la biblioteca hasta altas horas de la noche, atascado en una tarea sin poder avanzar. Los foros están muertos, tus amigos estudian otras cosas y hablar con desconocidos cuesta trabajo.<br><br>Precisamente de esa frustración nació WalnutPie. Quería crear un lugar donde pudieras encontrar al instante a alguien en tu misma situación. Compartimos el conocimiento tan fácilmente como un trozo de pastel. Sin perfiles falsos, sin distracciones, solo nosotros, los estudiantes.',
+                'safety-title': 'Por qué es seguro', 
+                'safe-1-head': 'Email Uni', 
+                'safe-1-text': 'Verificado.', 
+                'safe-2-head': 'Verificado', 
+                'safe-2-text': 'Estudiantes reales.', 
+                'safe-3-head': 'Buen rollo', 
+                'safe-3-text': 'Sin spam.' 
+            }
+        };
+
+        window.setLanguage = function(lang) {
+            const code = lang.split('-')[0];
+            const t = translations[code] || translations['en'];
+            try { localStorage.setItem('language', code); } catch(e) {}
+
+            ['de','en','fr','es'].forEach(c => {
+                // Desktop Button Style
+                const db = document.getElementById('lang-'+c);
+                if(db) {
+                    db.style.opacity = (c === code) ? '1' : '0.5';
+                    db.style.textDecoration = (c === code) ? 'underline' : 'none';
+                }
+                
+                // Mobile Button Style
+                const mb = document.getElementById('mobile-lang-'+c);
+                if(mb) {
+                    mb.style.color = (c === code) ? '#b45309' : '#a8a29e'; // Walnut Gold vs Grey
+                    mb.style.textDecoration = (c === code) ? 'underline' : 'none';
+                }
+            });
+            
+            for (const [key, value] of Object.entries(t)) {
+                const el = document.getElementById(key);
+                if(el) el.innerHTML = value;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Safe language init
+            let lang = 'de';
+            try { lang = localStorage.getItem('language') || navigator.language; } catch(e) {}
+            setLanguage(lang);
+        });
+    </script>
+</body>
+</html>
